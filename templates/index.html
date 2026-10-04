@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMS Spam Detection | NLP Machine Learning Lab</title>
+    <!-- Google Fonts & FontAwesome Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="app-wrapper">
+        <!-- Header Section -->
+        <header class="app-header">
+            <div class="header-content">
+                <div class="brand-badge">
+                    <i class="fa-solid fa-robot"></i> NLP Lab Project
+                </div>
+                <h1>SMS Spam Message Classifier</h1>
+                <p class="subtitle">Machine Learning Text Classification using <strong>TF-IDF Vectorization</strong> & <strong>Multinomial Naive Bayes</strong></p>
+            </div>
+            
+            <!-- Model Performance Stats Grid -->
+            <div class="stats-bar" id="statsBar">
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fa-solid fa-bullseye"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="statAccuracy">--%</span>
+                        <span class="stat-label">Model Accuracy</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fa-solid fa-database"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="statSamples">--</span>
+                        <span class="stat-label">SMS Samples</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fa-solid fa-book-bookmark"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="statVocab">--</span>
+                        <span class="stat-label">TF-IDF Features</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fa-solid fa-microchip"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-value">Naive Bayes</span>
+                        <span class="stat-label">Classifier Engine</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Grid Container -->
+        <main class="main-content">
+            <!-- Left Column: Input & Controls -->
+            <section class="card input-section">
+                <div class="card-header">
+                    <h2><i class="fa-regular fa-comment-dots"></i> Enter Message to Test</h2>
+                    <span class="char-counter" id="charCount">0 characters</span>
+                </div>
+
+                <div class="textarea-wrapper">
+                    <textarea 
+                        id="messageInput" 
+                        placeholder="Type or paste an SMS, email, or message here... (e.g., 'WINNER! You won $1000 cash, claim now...')" 
+                        rows="4"
+                    ></textarea>
+                    <button type="button" class="btn-icon-clear" id="btnClear" title="Clear Text">
+                        <i class="fa-solid fa-eraser"></i>
+                    </button>
+                </div>
+
+                <!-- Preprocessing Toggles Section -->
+                <div class="preprocessing-box">
+                    <div class="box-title"><i class="fa-solid fa-gears"></i> Preprocessing Pipeline</div>
+                    <div class="toggles-grid">
+                        <label class="toggle-item" title="Converts all text to lower case">
+                            <input type="checkbox" id="toggleLower" checked>
+                            <span class="switch"></span>
+                            <span class="toggle-label"><i class="fa-solid fa-font"></i> Lowercasing</span>
+                        </label>
+                        <label class="toggle-item" title="Removes special characters and symbols">
+                            <input type="checkbox" id="togglePunct" checked>
+                            <span class="switch"></span>
+                            <span class="toggle-label"><i class="fa-solid fa-filter"></i> Punctuation Removal</span>
+                        </label>
+                        <label class="toggle-item" title="Removes common English words like 'the', 'is', 'at'">
+                            <input type="checkbox" id="toggleStop" checked>
+                            <span class="switch"></span>
+                            <span class="toggle-label"><i class="fa-solid fa-ban"></i> Stopword Removal</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Action Button -->
+                <div class="action-bar">
+                    <button type="button" class="btn-primary" id="btnAnalyze">
+                        <i class="fa-solid fa-magnifying-glass-chart"></i> Analyze Message
+                    </button>
+                </div>
+
+                <!-- Sample Examples Section -->
+                <div class="examples-section">
+                    <div class="examples-header">
+                        <h3><i class="fa-solid fa-vial"></i> Sample Test Messages</h3>
+                        <div class="example-tabs">
+                            <button class="tab-btn active" data-tab="all">All</button>
+                            <button class="tab-btn spam-tab" data-tab="spam"><i class="fa-solid fa-triangle-exclamation"></i> Spam</button>
+                            <button class="tab-btn ham-tab" data-tab="ham"><i class="fa-solid fa-shield-halved"></i> Legitimate</button>
+                        </div>
+                    </div>
+                    <div class="examples-grid" id="examplesGrid">
+                        <!-- Dynamic example cards populated via JavaScript -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Right Column: Results & NLP Breakdown -->
+            <section class="card result-section" id="resultCard">
+                <!-- Empty Placeholder State -->
+                <div class="empty-state" id="emptyState">
+                    <div class="empty-icon">
+                        <i class="fa-solid fa-shield-cat"></i>
+                    </div>
+                    <h3>Ready for Classification</h3>
+                    <p>Enter your custom SMS text on the left or click any sample message to run the NLP Spam Detector.</p>
+                </div>
+
+                <!-- Active Result Display (Hidden initially) -->
+                <div class="result-content hidden" id="resultContent">
+                    <div class="result-badge-container" id="badgeContainer">
+                        <div class="badge-icon" id="badgeIcon"></div>
+                        <div class="badge-text-wrap">
+                            <span class="badge-sub">Classification Result</span>
+                            <h2 class="badge-title" id="badgeTitle">SPAM</h2>
+                        </div>
+                        <div class="confidence-pill" id="confidencePill">
+                            <i class="fa-solid fa-chart-line"></i> <span id="confidenceValue">98.5%</span> Confidence
+                        </div>
+                    </div>
+
+                    <!-- Probability Bars -->
+                    <div class="probability-card">
+                        <div class="prob-header">
+                            <span>Prediction Probabilities</span>
+                            <span class="prob-formula">P(Class | Text)</span>
+                        </div>
+                        <div class="bar-group">
+                            <div class="bar-label">
+                                <span class="label-spam"><i class="fa-solid fa-triangle-exclamation"></i> Spam</span>
+                                <span id="spamProbText">0.0%</span>
+                            </div>
+                            <div class="bar-track">
+                                <div class="bar-fill fill-spam" id="spamBar" style="width: 0%;"></div>
+                            </div>
+                        </div>
+                        <div class="bar-group">
+                            <div class="bar-label">
+                                <span class="label-ham"><i class="fa-solid fa-circle-check"></i> Not Spam (Legitimate)</span>
+                                <span id="hamProbText">0.0%</span>
+                            </div>
+                            <div class="bar-track">
+                                <div class="bar-fill fill-ham" id="hamBar" style="width: 0%;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pipeline Steps Breakdown -->
+                    <div class="nlp-steps-card">
+                        <h4><i class="fa-solid fa-sitemap"></i> Preprocessing Pipeline Breakdown</h4>
+                        
+                        <div class="step-item">
+                            <div class="step-num">1</div>
+                            <div class="step-body">
+                                <div class="step-title">Original Input</div>
+                                <div class="step-box code-box" id="stepOriginal">--</div>
+                            </div>
+                        </div>
+
+                        <div class="step-item">
+                            <div class="step-num">2</div>
+                            <div class="step-body">
+                                <div class="step-title">Cleaned Preprocessed Text</div>
+                                <div class="step-box code-box highlight-text" id="stepCleaned">--</div>
+                            </div>
+                        </div>
+
+                        <div class="step-item">
+                            <div class="step-num">3</div>
+                            <div class="step-body">
+                                <div class="step-title">Extracted Tokens (<span id="tokenCount">0</span>)</div>
+                                <div class="tokens-wrap" id="stepTokens">
+                                    <!-- Dynamic Token Badges -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="step-item">
+                            <div class="step-num">4</div>
+                            <div class="step-body">
+                                <div class="step-title">Top TF-IDF Keyword Features</div>
+                                <div class="keywords-list" id="stepKeywords">
+                                    <!-- Keyword items -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="app-footer">
+            <p>NLP Lab Project &bull; Built with <strong>Python, Flask & Scikit-Learn</strong></p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
